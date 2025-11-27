@@ -7,13 +7,6 @@ load_dotenv()
 
 
 class Config:
-    # Ollama settings
-    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    OLLAMA_MODEL: str = os.getenv(
-        "OLLAMA_MODEL",
-        "hf.co/ojisetyawan/gemma2-9b-cpt-sahabatai-v1-instruct-Q4_K_M-GGUF:latest"
-    )
-    
     # Embedding model
     EMBEDDING_MODEL: str = os.getenv(
         "EMBEDDING_MODEL",

@@ -3,27 +3,7 @@
 from typing import Dict, Any, List, Optional
 
 from src.vector_store import get_vector_store, VectorStore
-from src.llm import get_llm, OllamaLLM
 from config import config
-
-
-SYSTEM_PROMPT = """Kamu adalah asisten yang bertugas mengoreksi kesalahan Speech-to-Text (STT).
-Tugasmu adalah menganalisis teks hasil STT yang mungkin salah dengar dan mengoreksinya berdasarkan daftar koreksi yang diberikan.
-
-Aturan:
-1. Jika ada kecocokan dengan daftar koreksi, gunakan frasa yang benar
-2. Jika tidak ada kecocokan, kembalikan teks asli tanpa perubahan
-3. Berikan hanya hasil koreksi, tanpa penjelasan tambahan
-4. Pertahankan kapitalisasi dan tanda baca yang sesuai"""
-
-
-USER_PROMPT_TEMPLATE = """Teks STT yang perlu dikoreksi: "{input_text}"
-
-Daftar kemungkinan koreksi berdasarkan knowledge base:
-{corrections}
-
-Berdasarkan daftar koreksi di atas, apa hasil koreksi yang tepat untuk teks STT tersebut?
-Jawab hanya dengan teks hasil koreksi, tanpa penjelasan."""
 
 
 class STTCorrector:
@@ -31,12 +11,11 @@ class STTCorrector:
     
     def __init__(self):
         self.vector_store: VectorStore = get_vector_store()
-        self.llm: OllamaLLM = get_llm()
     
     def correct(
         self,
         input_text: str,
-        use_llm: bool = True,
+        use_llm: bool = False,
         top_k: int = None
     ) -> Dict[str, Any]:
         """
@@ -78,29 +57,7 @@ class STTCorrector:
             result["confidence"] = best_match["similarity"]
             return result
         
-        # Step 3: Use LLM for ambiguous cases
-        if use_llm and candidates:
-            corrections_text = self._format_candidates(candidates)
-            
-            prompt = USER_PROMPT_TEMPLATE.format(
-                input_text=input_text,
-                corrections=corrections_text
-            )
-            
-            llm_response = self.llm.generate(
-                prompt=prompt,
-                system_prompt=SYSTEM_PROMPT,
-                temperature=0.1
-            )
-            
-            corrected = llm_response.strip().strip('"').strip("'")
-            
-            if corrected and corrected.lower() != input_text.lower():
-                result["corrected_text"] = corrected
-                result["correction_made"] = True
-                result["method"] = "llm_rag"
-                result["confidence"] = best_match["similarity"]
-        
+        # Tidak ada LLM: jika tidak lolos direct match, kembalikan teks asli
         return result
     
     def correct_in_text(
@@ -159,9 +116,9 @@ class STTCorrector:
                 for idx in range(i, i + size):
                     used_indices.add(idx)
 
-        # Jika tidak ada replacement, fallback ke koreksi biasa
+        # Jika tidak ada replacement, fallback ke koreksi berbasis kalimat penuh
         if not replacements:
-            base = self.correct(input_text=input_text, use_llm=use_llm)
+            base = self.correct(input_text=input_text, use_llm=False)
             return base
 
         # Bangun kembali teks dengan replacement
@@ -203,10 +160,10 @@ class STTCorrector:
     def correct_batch(
         self,
         texts: List[str],
-        use_llm: bool = True
+        use_llm: bool = False
     ) -> List[Dict[str, Any]]:
         """Correct multiple STT texts."""
-        return [self.correct(text, use_llm=use_llm) for text in texts]
+        return [self.correct(text, use_llm=False) for text in texts]
     
     def add_correction(
         self,
@@ -231,8 +188,9 @@ class STTCorrector:
         """Get system statistics."""
         return {
             "vector_store": self.vector_store.get_stats(),
-            "llm_model": self.llm.model_name,
-            "llm_connected": self.llm.check_connection()
+            "llm_enabled": False,
+            "llm_model": None,
+            "llm_connected": False,
         }
 
 
