@@ -76,6 +76,43 @@
       "context": "Menyebut nama Badiklat",
       "category": "organization"
     },
+      {
+        "correct_phrase": "next g",
+        "common_mistakes": [
+          "next ji",
+          "next gee",
+          "nex g",
+          "nek ji",
+          "nek gee",
+          "nex ji",
+          "next gee",
+          "next chee",
+          "next t",
+          "next j",
+          "next zi",
+          "next key",
+          "next gi",
+          "next ge",
+          "next ghee",
+          "neck g",
+          "neck ji",
+          "nax g",
+          "nax ji",
+          "nex dji",
+          "next di",
+          "next jee",
+          "next tchi",
+          "next chi",
+          "next gee",
+          "next zhi",
+          "next gyi",
+          "next gii",
+          "next c",
+          "max g"
+        ],
+      "context": "Menyebut nama next g",
+      "category": "organization"
+    },
         {
       "correct_phrase": "stop meeting",
       "common_mistakes": [
@@ -124,7 +161,7 @@
   "metadata": {
     "version": "1.0",
     "description": "Knowledge base untuk koreksi kesalahan Speech-to-Text",
-    "total_entries": 3
+    "total_entries": 4
   }
 }
 
