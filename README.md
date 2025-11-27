@@ -1,115 +1,174 @@
 # STT Corrector - RAG System
 
-Sistem koreksi kesalahan Speech-to-Text (STT) menggunakan Retrieval-Augmented Generation (RAG).
+Sistem koreksi kesalahan Speech-to-Text (STT) berbasis **knowledge base + embedding + vector search (ChromaDB)**.
+Tidak lagi menggunakan Ollama/LLM, seluruh koreksi ditentukan oleh daftar frasa di `knowledge_base.json`.
 
 ## 🎯 Fitur
 
 - **Koreksi STT Otomatis**: Mengoreksi kesalahan pengenalan suara berdasarkan knowledge base
-- **RAG Pipeline**: Menggunakan vector similarity search + LLM untuk koreksi yang akurat
-- **Knowledge Base Dinamis**: Tambahkan koreksi baru melalui API atau UI
-- **Web Interface**: UI modern untuk testing dan demo
-- **REST API**: Integrasi mudah dengan sistem lain
+- **RAG Pipeline Sederhana**: Menggunakan embedding `sentence-transformers` + vector similarity search di ChromaDB
+- **Knowledge Base Dinamis**: Tambahkan koreksi baru melalui API
+- **Backend-only REST API**: Mudah diintegrasikan ke pipeline STT / aplikasi lain
 
 ## 📁 Struktur Proyek
 
 ```
 corector/
-├── config.py              # Konfigurasi sistem
-├── main.py                # Entry point aplikasi
-├── requirements.txt       # Dependencies
-├── .env                   # Environment variables
+├── config.py              # Konfigurasi sistem (embedding, Chroma, server)
+├── main.py                # Entry point aplikasi (menjalankan FastAPI)
+├── requirements.txt       # Dependencies Python
+├── .env                   # Environment variables (HOST, PORT, EMBEDDING_MODEL, dst.)
 ├── README.md
 │
 ├── data/
-│   ├── knowledge_base.json    # Knowledge base koreksi
-│   └── chroma_db/             # Vector database (auto-generated)
+│   ├── knowledge_base.json    # Knowledge base koreksi (correct_phrase + common_mistakes)
+│   └── chroma_db/             # Vector database (auto-generated oleh Chroma)
 │
 ├── src/
 │   ├── __init__.py
-│   ├── api.py             # FastAPI endpoints
-│   ├── corrector.py       # Main corrector logic
-│   ├── embeddings.py      # Embedding model
-│   ├── llm.py             # Ollama LLM wrapper
-│   └── vector_store.py    # ChromaDB vector store
-│
-├── static/
-│   └── index.html         # Web interface
+│   ├── api.py             # FastAPI endpoints (REST API backend-only)
+│   ├── corrector.py       # Main corrector logic (n-gram + vector store)
+│   ├── embeddings.py      # Embedding model (SentenceTransformers)
+│   └── vector_store.py    # ChromaDB vector store wrapper
 │
 └── scripts/
-    ├── init_db.py         # Initialize database
-    └── test_corrector.py  # Test script
+    ├── init_db.py         # Initialize database dari knowledge_base.json (opsional)
+    └── test_corrector.py  # Test script (opsional)
 ```
 
-## 🚀 Instalasi
+## 🚀 Instalasi & Menjalankan
 
-### 1. Clone dan Setup Environment
+### 1. Clone Repo
 
 ```bash
-cd ~/corector
+git clone https://github.com/ArifMunawarr/corectorrag.git
+cd corectorrag
+```
+
+Atau jika Anda sudah punya folder `/home/olama/corector`, cukup pastikan remote sudah mengarah ke repo tersebut.
+
+### 2. Buat Virtualenv & Install Dependencies
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Pastikan Ollama Running
+### 3. Konfigurasi Dasar
 
-```bash
-# Cek Ollama service
-ollama list
+Buat file `.env` di root proyek (jika belum ada), misalnya:
 
-# Pastikan model tersedia
-# hf.co/ojisetyawan/gemma2-9b-cpt-sahabatai-v1-instruct-Q4_K_M-GGUF:latest
+```env
+# Embedding model
+EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+
+# ChromaDB
+CHROMA_PERSIST_DIR=./data/chroma_db
+
+# Server
+HOST=0.0.0.0
+PORT=8888
 ```
 
-### 3. Jalankan Aplikasi
+Sesuaikan `PORT` jika perlu.
+
+### 4. Jalankan Server Secara Manual
 
 ```bash
-# Jalankan server
+source venv/bin/activate
 python main.py
-
-# Atau dengan uvicorn langsung
-uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 4. Akses Aplikasi
+Secara default server akan berjalan di `http://0.0.0.0:PORT` (misal `http://localhost:8888`).
 
-- **Web Interface**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+### 5. (Opsional) Jalankan sebagai systemd Service
+
+Contoh file service `/etc/systemd/system/corector.service`:
+
+```ini
+[Unit]
+Description=STT Corrector RAG Service
+After=network.target
+
+[Service]
+User=olama
+Group=olama
+WorkingDirectory=/home/olama/corector
+ExecStart=/home/olama/corector/venv/bin/python /home/olama/corector/main.py
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Aktifkan dan jalankan:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now corector.service
+sudo systemctl status corector.service
+```
+
+Setelah itu service akan otomatis berjalan di background.
 
 ## 📖 Penggunaan
-
-### Web Interface
-
-1. Buka http://localhost:8000
-2. Masukkan teks STT yang salah (misal: "start eating")
-3. Klik "Koreksi Teks"
-4. Sistem akan mengoreksi menjadi "start meeting"
 
 ### REST API
 
 #### Koreksi Teks
 
 ```bash
-curl -X POST http://localhost:8000/correct \
+# Output JSON lengkap
+curl -X POST http://localhost:8888/correct \
   -H "Content-Type: application/json" \
-  -d '{"text": "start eating", "use_llm": true}'
+  -d '{"text": "start eating"}'
 ```
 
 Response:
+
 ```json
 {
   "input_text": "start eating",
   "corrected_text": "start meeting",
   "correction_made": true,
   "method": "direct_match",
-  "confidence": 0.92
+  "confidence": 1.0,
+  "candidates": [
+    {
+      "correct_phrase": "start meeting",
+      "matched_text": "start eating",
+      "common_mistakes": ["start eating", "start meting", ...],
+      "context": "Memulai rapat atau pertemuan",
+      "category": "meeting",
+      "similarity": 1.0
+    }
+  ]
 }
+```
+
+#### Koreksi Teks (output sederhana)
+
+Endpoint khusus yang hanya mengembalikan teks koreksi:
+
+```bash
+curl -X POST http://localhost:8888/correct/plain \
+  -H "Content-Type: application/json" \
+  -d '{"text": "start eating"}'
+```
+
+Response:
+
+```json
+{ "corrected_text": "start meeting" }
 ```
 
 #### Tambah Koreksi Baru
 
 ```bash
-curl -X POST http://localhost:8000/knowledge/add \
+curl -X POST http://localhost:8888/knowledge/add \
   -H "Content-Type: application/json" \
   -d '{
     "correct_phrase": "book appointment",
@@ -122,7 +181,7 @@ curl -X POST http://localhost:8000/knowledge/add \
 #### Cek Status
 
 ```bash
-curl http://localhost:8000/stats
+curl http://localhost:8888/stats
 ```
 
 ## 🔧 Konfigurasi
@@ -130,15 +189,15 @@ curl http://localhost:8000/stats
 Edit file `.env` untuk mengubah konfigurasi:
 
 ```env
-# Model Ollama
-OLLAMA_MODEL=hf.co/ojisetyawan/gemma2-9b-cpt-sahabatai-v1-instruct-Q4_K_M-GGUF:latest
-
 # Embedding model
 EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 
+# ChromaDB
+CHROMA_PERSIST_DIR=./data/chroma_db
+
 # Server
 HOST=0.0.0.0
-PORT=8000
+PORT=8888
 ```
 
 ## 📝 Knowledge Base
@@ -170,11 +229,10 @@ python scripts/init_db.py
 
 ## 🛠️ Tech Stack
 
-- **LLM**: Ollama dengan gemma2-9b-cpt-sahabatai
-- **Embeddings**: SentenceTransformers (multilingual)
-- **Vector Store**: ChromaDB
+- **Embeddings**: SentenceTransformers (`paraphrase-multilingual-MiniLM-L12-v2`)
+- **Vector Store**: ChromaDB (persistent, `data/chroma_db/`)
 - **Backend**: FastAPI + Uvicorn
-- **Frontend**: HTML + TailwindCSS
+- **Config**: `.env` + `config.py`
 
 ## 📄 License
 
