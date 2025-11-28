@@ -90,7 +90,7 @@ Untuk mengaktifkan LLM (RAG + LLM normalizer), set `use_llm` ke `true`:
 ```bash
 curl -X POST http://localhost:8888/correct \
   -H "Content-Type: application/json" \
-  -d '{"text": "beso kit mulai pelatihan nek ji", "use_llm": true}'
+  -d '{"text": "beso kit mulai pelatihan nek ji"}'
 ```
 
 #### Koreksi Teks (output sederhana)
