@@ -105,7 +105,7 @@ Contoh lain (teks STT bahasa Indonesia dengan LLM + knowledge base):
 ```bash
 curl -X POST http://localhost:8888/correct/plain \
   -H "Content-Type: application/json" \
-  -d '{"text": "beso kitaMulai pelatihan nek ji, tida di kantol tapi d hotel"'
+  -d '{"text": "beso kitaMulai pelatihan nek ji, tida di kantol tapi d hotel"}'
 ```
 
 Response:
