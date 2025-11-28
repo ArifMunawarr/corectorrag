@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 from typing import Dict, Any, List, Optional
@@ -86,6 +87,12 @@ class STTCorrector:
                 result["method"] = "llm"
             else:
                 result["method"] = "llm_with_rag"
+            
+            # Post-processing: Pastikan frasa dari knowledge base tetap exact match
+            for candidate in candidates:
+                correct_phrase = candidate["correct_phrase"]
+                pattern = re.compile(re.escape(correct_phrase), re.IGNORECASE)
+                result["corrected_text"] = pattern.sub(correct_phrase, result["corrected_text"])
         
         return result
     
@@ -125,7 +132,10 @@ class STTCorrector:
                 if any(idx in used_indices for idx in range(i, i + size)):
                     continue
 
-                phrase = " ".join(tokens[i : i + size])
+                # Strip punctuation dari token untuk search
+                clean_tokens = [re.sub(r'[^\w\s-]', '', tok) for tok in tokens[i : i + size]]
+                phrase = " ".join(clean_tokens)
+                
                 candidates = self.vector_store.search(query=phrase, top_k=1)
                 if not candidates:
                     continue
@@ -158,7 +168,18 @@ class STTCorrector:
         while i < n:
             if i in replacements:
                 end_idx, rep_tokens, best = replacements[i]
-                corrected_tokens.extend(rep_tokens)
+                # Ambil punctuation dari token terakhir yang diganti
+                last_token_orig = tokens[end_idx - 1]
+                trailing_punct = re.findall(r'[^\w\s-]+$', last_token_orig)
+                
+                # Tambahkan replacement tokens
+                corrected_tokens.extend(rep_tokens[:-1] if len(rep_tokens) > 1 else [])
+                # Token terakhir + punctuation asli
+                last_rep = rep_tokens[-1] if rep_tokens else ""
+                if trailing_punct:
+                    last_rep += trailing_punct[0]
+                corrected_tokens.append(last_rep)
+                
                 applied_candidates.append(best)
                 i = end_idx
             else:
@@ -174,6 +195,14 @@ class STTCorrector:
             if llm_text:
                 final_text = llm_text
                 method = "ngram_direct_match+llm"
+                
+                # Post-processing: Pastikan frasa dari knowledge base tetap exact match
+                # (LLM kadang mengubah kapitalisasi)
+                for candidate in applied_candidates:
+                    correct_phrase = candidate["correct_phrase"]
+                    # Case-insensitive replace dengan exact casing dari knowledge base
+                    pattern = re.compile(re.escape(correct_phrase), re.IGNORECASE)
+                    final_text = pattern.sub(correct_phrase, final_text)
 
         return {
             "input_text": input_text,
@@ -208,23 +237,26 @@ class STTCorrector:
             "ATURAN PENTING:",
             "- HANYA perbaiki kata yang jelas typo atau salah dengar",
             "- JANGAN tambah kata baru yang tidak ada di input",
+            "- JANGAN hapus kata apapun dari input - semua kata harus tetap ada dalam output (meskipun dikoreksi)",
             "- JANGAN ganti kata dengan kata lain yang mengubah makna kalimat",
             "- JANGAN ubah struktur kalimat atau urutan kata",
             "- BOLEH memperbaiki kapitalisasi dan spasi yang salah (misalnya 'kitMulai' → 'kita mulai')",
+            "- KHUSUS untuk istilah/\"Frasa benar\" dari knowledge base, JANGAN ubah penulisan sama sekali (huruf besar/kecil, spasi, tanda hubung)",
             "- Koreksi harus minimal: hanya perbaiki huruf/ejaan, kapitalisasi, dan spasi yang salah",
             "- OUTPUT: Hanya tulis teks hasil koreksi, TANPA label, TANPA penjelasan",
             "",
             "POLA KESALAHAN UMUM:",
-            "- Huruf hilang: 'say' → 'saya', 'kit' → 'kita', 'bso' → 'baso'",
-            "- Salah dengar: 'k' → 'ke', 'kmarin' → 'kemarin', 'gmana' → 'gimana', 'beso' → 'besok'",
+            "- Huruf hilang: 'say' → 'saya', 'kit' → 'kita', 'bso' → 'baso', 'beso' → 'besok', 'tida' → 'tidak'",
+            "- Salah dengar: 'k' → 'ke', 'kmarin' → 'kemarin', 'gmana' → 'gimana'",
             "- Singkatan lisan: 'bru' → 'baru', 'org' → 'orang', 'tgl' → 'tanggal'",
-            "- Spasi/kapitalisasi: 'kitMulai' → 'kita mulai'",
+            "- Spasi/kapitalisasi: 'kitMulai' → 'kita mulai', 'kitaMulai' → 'kita mulai'",
         ]
 
         # Candidates jadi contoh belajar, bukan hardcode
         if candidates:
             parts.append("")
             parts.append("ISTILAH KHUSUS yang mungkin salah dengar:")
+            parts.append("Gunakan FRASA BENAR persis seperti tertulis, jangan diubah penulisannya (huruf besar/kecil, spasi, tanda hubung).")
             # Ambil max 5-10 contoh teratas aja
             top_candidates = candidates[:10] if len(candidates) > 10 else candidates
             parts.append(self._format_candidates(top_candidates))
@@ -244,6 +276,9 @@ class STTCorrector:
         parts.append("")
         parts.append("Contoh kalimat:")
         parts.append("'kmarin kit rapat dgan manajer' → 'kemarin kita rapat dengan manajer'")
+        parts.append("'beso kitaMulai pelatihan nek ji, tida di kantor' → 'besok kita mulai pelatihan Next-G tidak di kantor'")
+        parts.append("")
+        parts.append("INGAT: Semua kata dalam input harus ada dalam output (meskipun dikoreksi ejaannya)!")
         parts.append("")
         parts.append("===== TUGAS KAMU =====")
         parts.append("")
