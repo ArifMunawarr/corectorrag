@@ -1,5 +1,9 @@
 """Main STT Corrector RAG module."""
 
+import json
+import logging
+import urllib.error
+import urllib.request
 from typing import Dict, Any, List, Optional
 
 from src.vector_store import get_vector_store, VectorStore
@@ -44,20 +48,45 @@ class STTCorrector:
         }
         
         if not candidates:
+            if use_llm:
+                llm_text = self._call_llm_normalize(input_text, [])
+                if llm_text:
+                    result["corrected_text"] = llm_text
+                    result["correction_made"] = llm_text != input_text
+                    result["method"] = "llm"
             return result
         
         # Step 2: Check for high-confidence direct match (berbasis similarity embedding)
         best_match = candidates[0]
         direct_threshold = getattr(config, "DIRECT_MATCH_THRESHOLD", 0.7)
-        if best_match["similarity"] >= direct_threshold:
-            # High confidence - use direct match
-            result["corrected_text"] = best_match["correct_phrase"]
-            result["correction_made"] = True
-            result["method"] = "direct_match"
-            result["confidence"] = best_match["similarity"]
+
+        if not use_llm:
+            if best_match["similarity"] >= direct_threshold:
+                # High confidence - use direct match
+                result["corrected_text"] = best_match["correct_phrase"]
+                result["correction_made"] = True
+                result["method"] = "direct_match"
+                result["confidence"] = best_match["similarity"]
+                return result
+            
+            # Tidak ada LLM: jika tidak lolos direct match, kembalikan teks asli
             return result
+
+        base_text = input_text
+        if best_match["similarity"] >= direct_threshold:
+            base_text = best_match["correct_phrase"]
+            result["confidence"] = best_match["similarity"]
+            result["method"] = "direct_match"
+
+        llm_text = self._call_llm_normalize(base_text, candidates)
+        if llm_text:
+            result["corrected_text"] = llm_text
+            result["correction_made"] = llm_text != input_text
+            if result["method"] == "none":
+                result["method"] = "llm"
+            else:
+                result["method"] = "llm_with_rag"
         
-        # Tidak ada LLM: jika tidak lolos direct match, kembalikan teks asli
         return result
     
     def correct_in_text(
@@ -118,7 +147,7 @@ class STTCorrector:
 
         # Jika tidak ada replacement, fallback ke koreksi berbasis kalimat penuh
         if not replacements:
-            base = self.correct(input_text=input_text, use_llm=False)
+            base = self.correct(input_text=input_text, use_llm=use_llm)
             return base
 
         # Bangun kembali teks dengan replacement
@@ -138,12 +167,20 @@ class STTCorrector:
 
         corrected_text = " ".join(corrected_tokens)
 
+        final_text = corrected_text
+        method = "ngram_direct_match"
+        if use_llm:
+            llm_text = self._call_llm_normalize(corrected_text, applied_candidates)
+            if llm_text:
+                final_text = llm_text
+                method = "ngram_direct_match+llm"
+
         return {
             "input_text": input_text,
-            "corrected_text": corrected_text,
+            "corrected_text": final_text,
             "candidates": applied_candidates,
-            "correction_made": corrected_text != input_text,
-            "method": "ngram_direct_match",
+            "correction_made": final_text != input_text,
+            "method": method,
         }
     
     def _format_candidates(self, candidates: List[Dict]) -> str:
@@ -156,6 +193,100 @@ class STTCorrector:
                 f"(kesalahan umum: {mistakes}) - Konteks: {c['context']}"
             )
         return "\n".join(lines)
+    
+    def _call_llm_normalize(
+        self,
+        input_text: str,
+        candidates: Optional[List[Dict[str, Any]]] = None,
+    ) -> Optional[str]:
+        base_url = getattr(config, "OLLAMA_BASE_URL", "http://localhost:11434")
+        model_name = getattr(config, "LLM_MODEL", "llama3.2:latest")  
+
+        parts: List[str] = [
+            "Kamu adalah sistem koreksi ejaan untuk teks speech-to-text bahasa Indonesia.",
+            "",
+            "ATURAN PENTING:",
+            "- HANYA perbaiki kata yang jelas typo atau salah dengar",
+            "- JANGAN tambah kata baru yang tidak ada di input",
+            "- JANGAN ubah atau ganti kata yang sudah ada dengan kata berbeda",
+            "- JANGAN ubah struktur kalimat atau urutan kata",
+            "- Koreksi harus minimal: hanya perbaiki huruf/ejaan yang salah",
+            "- OUTPUT: Hanya tulis teks hasil koreksi, TANPA label, TANPA penjelasan",
+            "",
+            "POLA KESALAHAN UMUM:",
+            "- Huruf hilang: 'say' → 'saya', 'kit' → 'kita', 'bso' → 'baso'",
+            "- Salah dengar: 'k' → 'ke', 'kmarin' → 'kemarin', 'gmana' → 'gimana', 'beso' → 'besok'",
+            "- Singkatan lisan: 'bru' → 'baru', 'org' → 'orang', 'tgl' → 'tanggal'",
+        ]
+
+        # Candidates jadi contoh belajar, bukan hardcode
+        if candidates:
+            parts.append("")
+            parts.append("ISTILAH KHUSUS yang mungkin salah dengar:")
+            # Ambil max 5-10 contoh teratas aja
+            top_candidates = candidates[:10] if len(candidates) > 10 else candidates
+            parts.append(self._format_candidates(top_candidates))
+
+        parts.append("")
+        parts.append("===== CONTOH POLA KOREKSI =====")
+        parts.append("Perbaiki HANYA huruf yang hilang atau salah, jangan ganti kata:")
+        parts.append("")
+        parts.append("'say' → 'saya' (huruf 'a' hilang)")
+        parts.append("'kit' → 'kita' (huruf 'a' hilang)")
+        parts.append("'beso' → 'besok' (huruf 'k' hilang)")
+        parts.append("'kmarin' → 'kemarin' (huruf 'e' hilang)")
+        parts.append("'gmana' → 'gimana' (huruf 'i' hilang)")
+        parts.append("'dgan' → 'dengan' (huruf 'en' hilang)")
+        parts.append("'bru' → 'baru' (huruf 'a' hilang)")
+        parts.append("")
+        parts.append("Contoh kalimat:")
+        parts.append("'kmarin kit rapat dgan manajer' → 'kemarin kita rapat dengan manajer'")
+        parts.append("")
+        parts.append("===== TUGAS KAMU =====")
+        parts.append("")
+        parts.append("Teks: " + input_text)
+        parts.append("Koreksi:")
+
+        prompt = "\n".join(parts)
+
+        payload = {
+            "model": model_name,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.05,
+                "top_p": 0.1,
+                "num_predict": 150,
+            },
+        }
+        
+        data = json.dumps(payload).encode("utf-8")
+        url = f"{base_url.rstrip('/')}/api/generate"
+
+        try:
+            request_obj = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(request_obj, timeout=30) as response:
+                raw = response.read().decode("utf-8")
+
+            resp_json = json.loads(raw)
+            text = resp_json.get("response", "").strip()
+            if not text:
+                return None
+
+            if (text.startswith("\"") and text.endswith("\"")) or (
+                text.startswith("'") and text.endswith("'")
+            ):
+                text = text[1:-1].strip()
+
+            return text
+        except Exception:
+            logging.exception("Failed to call LLM for normalization")
+            return None
     
     def correct_batch(
         self,
@@ -188,8 +319,8 @@ class STTCorrector:
         """Get system statistics."""
         return {
             "vector_store": self.vector_store.get_stats(),
-            "llm_enabled": False,
-            "llm_model": None,
+            "llm_enabled": True,
+            "llm_model": getattr(config, "LLM_MODEL", None),
             "llm_connected": False,
         }
 
