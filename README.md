@@ -83,15 +83,6 @@ Secara default server akan berjalan di `http://0.0.0.0:PORT` (misal `http://loca
 
 ## 📖 Penggunaan
 
-### REST API
-
-Untuk mengaktifkan LLM (RAG + LLM normalizer), set `use_llm` ke `true`:
-
-```bash
-curl -X POST http://localhost:8888/correct \
-  -H "Content-Type: application/json" \
-  -d '{"text": "beso kit mulai pelatihan nek ji"}'
-```
 
 #### Koreksi Teks (output sederhana)
 
