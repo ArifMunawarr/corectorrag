@@ -243,7 +243,3 @@ python scripts/init_db.py
 - **Vector Store**: ChromaDB
 - **Backend**: FastAPI + Uvicorn
 - **LLM**: Ollama atau llama.cpp (opsional)
-
-## 📄 License
-
-MIT License
