@@ -1,15 +1,15 @@
 # STT Corrector - RAG System
 
 Sistem koreksi kesalahan Speech-to-Text (STT) berbasis **knowledge base + embedding + vector search (ChromaDB)**,
-dengan opsi tambahan **LLM via Ollama** untuk normalisasi teks berbasis konteks.
+dengan opsi tambahan **LLM (Ollama / llama.cpp)** untuk normalisasi teks berbasis konteks.
 
 ## 🎯 Fitur
 
 - **Koreksi STT Otomatis**: Mengoreksi kesalahan pengenalan suara berdasarkan knowledge base
-- **RAG Pipeline Sederhana**: Menggunakan embedding `sentence-transformers` + vector similarity search di ChromaDB
+- **RAG Pipeline**: Menggunakan embedding `sentence-transformers` + vector similarity search di ChromaDB
 - **Knowledge Base Dinamis**: Tambahkan koreksi baru melalui API
 - **Backend-only REST API**: Mudah diintegrasikan ke pipeline STT / aplikasi lain
-- **Integrasi LLM Opsional (Ollama)**: Normalisasi teks menggunakan model lokal (mis. `llama3.2:latest`)
+- **LLM Opsional**: Support **Ollama** atau **llama.cpp** untuk normalisasi teks
 
 ## 📁 Struktur Proyek
 
@@ -46,8 +46,6 @@ git clone https://github.com/ArifMunawarr/corectorrag.git
 cd corectorrag
 ```
 
-Atau jika Anda sudah punya folder `/home/olama/corector`, cukup pastikan remote sudah mengarah ke repo tersebut.
-
 ### 2. Buat Virtualenv & Install Dependencies
 
 ```bash
@@ -82,38 +80,6 @@ python main.py
 ```
 
 Secara default server akan berjalan di `http://0.0.0.0:PORT` (misal `http://localhost:8888`).
-
-### 5. (Opsional) Jalankan sebagai systemd Service
-
-Contoh file service `/etc/systemd/system/corector.service`:
-
-```ini
-[Unit]
-Description=STT Corrector RAG Service
-After=network.target
-
-[Service]
-User=olama
-Group=olama
-WorkingDirectory=/home/olama/corector
-ExecStart=/home/olama/corector/venv/bin/python /home/olama/corector/main.py
-Environment=PYTHONUNBUFFERED=1
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Aktifkan dan jalankan:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now corector.service
-sudo systemctl status corector.service
-```
-
-Setelah itu service akan otomatis berjalan di background.
 
 ## 📖 Penggunaan
 
@@ -195,7 +161,7 @@ curl http://localhost:8888/stats
 
 ## 🔧 Konfigurasi
 
-Edit file `.env` untuk mengubah konfigurasi:
+### Environment Variables (`.env`)
 
 ```env
 # Embedding model
@@ -207,11 +173,42 @@ CHROMA_PERSIST_DIR=./data/chroma_db
 # Server
 HOST=0.0.0.0
 PORT=8888
-
-# LLM (Ollama)
-OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL=llama3.2:latest
 ```
+
+### LLM Backend (`config.py`)
+
+Edit `config.py` untuk memilih backend LLM:
+
+#### OPSI 1: Ollama (default)
+
+```python
+LLM_BACKEND: str = os.getenv("LLM_BACKEND", "ollama")
+OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3.2:latest")
+```
+
+Jalankan Ollama:
+```bash
+ollama run llama3.2:latest
+```
+
+#### OPSI 2: llama.cpp
+
+Comment OPSI 1, uncomment OPSI 2 di `config.py`:
+
+```python
+LLM_BACKEND: str = os.getenv("LLM_BACKEND", "llama_cpp")
+LLAMA_CPP_URL: str = os.getenv("LLAMA_CPP_URL", "http://localhost:8080")
+```
+
+Jalankan llama.cpp server:
+```bash
+./llama-server -m /path/to/model.gguf --port 8080
+```
+
+#### Tanpa LLM
+
+Jika tidak ingin pakai LLM, cukup set `use_llm: false` di request API.
 
 ## 📝 Knowledge Base
 
@@ -243,9 +240,9 @@ python scripts/init_db.py
 ## 🛠️ Tech Stack
 
 - **Embeddings**: SentenceTransformers (`paraphrase-multilingual-MiniLM-L12-v2`)
-- **Vector Store**: ChromaDB (persistent, `data/chroma_db/`)
+- **Vector Store**: ChromaDB
 - **Backend**: FastAPI + Uvicorn
-- **Config**: `.env` + `config.py`
+- **LLM**: Ollama atau llama.cpp (opsional)
 
 ## 📄 License
 
