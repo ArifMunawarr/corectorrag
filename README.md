@@ -94,10 +94,26 @@ curl -X POST http://localhost:8888/correct/plain \
   -d '{"text": "start eating"}'
 ```
 
-Response:
+Response (contoh bahasa Inggris):
 
 ```json
 { "corrected_text": "start meeting" }
+```
+
+Contoh lain (teks STT bahasa Indonesia dengan LLM + knowledge base):
+
+```bash
+curl -X POST http://localhost:8888/correct/plain \
+  -H "Content-Type: application/json" \
+  -d '{"text": "beso kitaMulai pelatihan nek ji, tida di kantol tapi d hotel", "use_llm": true}'
+```
+
+Response:
+
+```json
+{
+  "corrected_text": "besok kita mulai pelatihan Next-G, tidak di kantor tapi di hotel"
+}
 ```
 
 #### Tambah Koreksi Baru
