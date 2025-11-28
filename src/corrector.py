@@ -208,15 +208,17 @@ class STTCorrector:
             "ATURAN PENTING:",
             "- HANYA perbaiki kata yang jelas typo atau salah dengar",
             "- JANGAN tambah kata baru yang tidak ada di input",
-            "- JANGAN ubah atau ganti kata yang sudah ada dengan kata berbeda",
+            "- JANGAN ganti kata dengan kata lain yang mengubah makna kalimat",
             "- JANGAN ubah struktur kalimat atau urutan kata",
-            "- Koreksi harus minimal: hanya perbaiki huruf/ejaan yang salah",
+            "- BOLEH memperbaiki kapitalisasi dan spasi yang salah (misalnya 'kitMulai' → 'kita mulai')",
+            "- Koreksi harus minimal: hanya perbaiki huruf/ejaan, kapitalisasi, dan spasi yang salah",
             "- OUTPUT: Hanya tulis teks hasil koreksi, TANPA label, TANPA penjelasan",
             "",
             "POLA KESALAHAN UMUM:",
             "- Huruf hilang: 'say' → 'saya', 'kit' → 'kita', 'bso' → 'baso'",
             "- Salah dengar: 'k' → 'ke', 'kmarin' → 'kemarin', 'gmana' → 'gimana', 'beso' → 'besok'",
             "- Singkatan lisan: 'bru' → 'baru', 'org' → 'orang', 'tgl' → 'tanggal'",
+            "- Spasi/kapitalisasi: 'kitMulai' → 'kita mulai'",
         ]
 
         # Candidates jadi contoh belajar, bukan hardcode
@@ -229,7 +231,7 @@ class STTCorrector:
 
         parts.append("")
         parts.append("===== CONTOH POLA KOREKSI =====")
-        parts.append("Perbaiki HANYA huruf yang hilang atau salah, jangan ganti kata:")
+        parts.append("Perbaiki huruf/ejaan, kapitalisasi, dan spasi yang salah; jangan ganti makna kalimat:")
         parts.append("")
         parts.append("'say' → 'saya' (huruf 'a' hilang)")
         parts.append("'kit' → 'kita' (huruf 'a' hilang)")
@@ -238,6 +240,7 @@ class STTCorrector:
         parts.append("'gmana' → 'gimana' (huruf 'i' hilang)")
         parts.append("'dgan' → 'dengan' (huruf 'en' hilang)")
         parts.append("'bru' → 'baru' (huruf 'a' hilang)")
+        parts.append("'kitMulai' → 'kita mulai' (spasi + huruf)")
         parts.append("")
         parts.append("Contoh kalimat:")
         parts.append("'kmarin kit rapat dgan manajer' → 'kemarin kita rapat dengan manajer'")

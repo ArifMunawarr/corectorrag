@@ -1,7 +1,7 @@
 # STT Corrector - RAG System
 
-Sistem koreksi kesalahan Speech-to-Text (STT) berbasis **knowledge base + embedding + vector search (ChromaDB)**.
-Tidak lagi menggunakan Ollama/LLM, seluruh koreksi ditentukan oleh daftar frasa di `knowledge_base.json`.
+Sistem koreksi kesalahan Speech-to-Text (STT) berbasis **knowledge base + embedding + vector search (ChromaDB)**,
+dengan opsi tambahan **LLM via Ollama** untuk normalisasi teks berbasis konteks.
 
 ## 🎯 Fitur
 
@@ -9,6 +9,7 @@ Tidak lagi menggunakan Ollama/LLM, seluruh koreksi ditentukan oleh daftar frasa 
 - **RAG Pipeline Sederhana**: Menggunakan embedding `sentence-transformers` + vector similarity search di ChromaDB
 - **Knowledge Base Dinamis**: Tambahkan koreksi baru melalui API
 - **Backend-only REST API**: Mudah diintegrasikan ke pipeline STT / aplikasi lain
+- **Integrasi LLM Opsional (Ollama)**: Normalisasi teks menggunakan model lokal (mis. `llama3.2:latest`)
 
 ## 📁 Struktur Proyek
 
@@ -121,10 +122,10 @@ Setelah itu service akan otomatis berjalan di background.
 #### Koreksi Teks
 
 ```bash
-# Output JSON lengkap
+# Output JSON lengkap (mode RAG-only, tanpa LLM)
 curl -X POST http://localhost:8888/correct \
   -H "Content-Type: application/json" \
-  -d '{"text": "start eating"}'
+  -d '{"text": "start eating", "use_llm": false}'
 ```
 
 Response:
@@ -147,6 +148,14 @@ Response:
     }
   ]
 }
+```
+
+Untuk mengaktifkan LLM (RAG + LLM normalizer), set `use_llm` ke `true`:
+
+```bash
+curl -X POST http://localhost:8888/correct \
+  -H "Content-Type: application/json" \
+  -d '{"text": "beso kit mulai pelatihan nek ji", "use_llm": true}'
 ```
 
 #### Koreksi Teks (output sederhana)
@@ -198,6 +207,10 @@ CHROMA_PERSIST_DIR=./data/chroma_db
 # Server
 HOST=0.0.0.0
 PORT=8888
+
+# LLM (Ollama)
+OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=llama3.2:latest
 ```
 
 ## 📝 Knowledge Base
