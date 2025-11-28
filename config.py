@@ -20,8 +20,20 @@ class Config:
     # Server
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
+    
+    # ============================================================
+    # LLM Backend: Pilih SALAH SATU dengan uncomment yang sesuai
+    # ============================================================
+    
+    # === OPSI 1: Ollama (default) ===
+    LLM_BACKEND: str = os.getenv("LLM_BACKEND", "ollama")
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3.2:latest")
+    
+    # === OPSI 2: llama.cpp ===
+    # Uncomment 2 baris di bawah, comment 3 baris di atas (OPSI 1)
+    # LLM_BACKEND: str = os.getenv("LLM_BACKEND", "llama_cpp")
+    # LLAMA_CPP_URL: str = os.getenv("LLAMA_CPP_URL", "http://localhost:8080")
 
     # RAG settings
     TOP_K_RESULTS: int = 5

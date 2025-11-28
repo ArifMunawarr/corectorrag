@@ -228,9 +228,9 @@ class STTCorrector:
         input_text: str,
         candidates: Optional[List[Dict[str, Any]]] = None,
     ) -> Optional[str]:
-        base_url = getattr(config, "OLLAMA_BASE_URL", "http://localhost:11434")
-        model_name = getattr(config, "LLM_MODEL", "llama3.2:latest")  
-
+        # Pilih backend: "ollama" atau "llama_cpp"
+        backend = getattr(config, "LLM_BACKEND", "ollama")
+        
         parts: List[str] = [
             "Kamu adalah sistem koreksi ejaan untuk teks speech-to-text bahasa Indonesia.",
             "",
@@ -287,19 +287,44 @@ class STTCorrector:
 
         prompt = "\n".join(parts)
 
-        payload = {
-            "model": model_name,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
+        # === Backend: Ollama ===
+        if backend == "ollama":
+            base_url = getattr(config, "OLLAMA_BASE_URL", "http://localhost:11434")
+            model_name = getattr(config, "LLM_MODEL", "llama3.2:latest")
+            
+            payload = {
+                "model": model_name,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.05,
+                    "top_p": 0.1,
+                    "num_predict": 150,
+                },
+            }
+            url = f"{base_url.rstrip('/')}/api/generate"
+            response_key = "response"
+        
+        # === Backend: llama.cpp ===
+        elif backend == "llama_cpp":
+            base_url = getattr(config, "LLAMA_CPP_URL", "http://localhost:8080")
+            
+            payload = {
+                "prompt": prompt,
+                "n_predict": 150,
                 "temperature": 0.05,
                 "top_p": 0.1,
-                "num_predict": 150,
-            },
-        }
+                "stop": ["\n\n", "Teks:", "==="],  # Stop tokens
+            }
+            # llama.cpp server biasanya pakai /completion
+            url = f"{base_url.rstrip('/')}/completion"
+            response_key = "content"
+        
+        else:
+            logging.error(f"Unknown LLM backend: {backend}")
+            return None
         
         data = json.dumps(payload).encode("utf-8")
-        url = f"{base_url.rstrip('/')}/api/generate"
 
         try:
             request_obj = urllib.request.Request(
@@ -312,7 +337,7 @@ class STTCorrector:
                 raw = response.read().decode("utf-8")
 
             resp_json = json.loads(raw)
-            text = resp_json.get("response", "").strip()
+            text = resp_json.get(response_key, "").strip()
             if not text:
                 return None
 
@@ -323,7 +348,7 @@ class STTCorrector:
 
             return text
         except Exception:
-            logging.exception("Failed to call LLM for normalization")
+            logging.exception(f"Failed to call LLM ({backend}) for normalization")
             return None
     
     def correct_batch(
@@ -355,11 +380,13 @@ class STTCorrector:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get system statistics."""
+        backend = getattr(config, "LLM_BACKEND", "ollama")
         return {
             "vector_store": self.vector_store.get_stats(),
             "llm_enabled": True,
-            "llm_model": getattr(config, "LLM_MODEL", None),
-            "llm_connected": False,
+            "llm_backend": backend,
+            "llm_model": getattr(config, "LLM_MODEL", None) if backend == "ollama" else None,
+            "llama_cpp_url": getattr(config, "LLAMA_CPP_URL", None) if backend == "llama_cpp" else None,
         }
 
 
