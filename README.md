@@ -227,16 +227,6 @@ Edit `data/knowledge_base.json` untuk menambah/mengubah koreksi:
 }
 ```
 
-## 🧪 Testing
-
-```bash
-# Test corrector
-python scripts/test_corrector.py
-
-# Initialize database
-python scripts/init_db.py
-```
-
 ## 🛠️ Tech Stack
 
 - **Embeddings**: SentenceTransformers (`paraphrase-multilingual-MiniLM-L12-v2`)
