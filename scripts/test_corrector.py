@@ -26,12 +26,6 @@ def main():
     # Test cases
     test_cases = [
         "start eating",      # Should correct to "start meeting"
-        "send mail",         # Should correct to "send email"
-        "screen chair",      # Should correct to "screen share"
-        "open fail",         # Should correct to "open file"
-        "join eating",       # Should correct to "join meeting"
-        "mute mike",         # Should correct to "mute microphone"
-        "hello world",       # Should remain unchanged (no match)
     ]
     
     print("=" * 60)

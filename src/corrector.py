@@ -387,6 +387,9 @@ class STTCorrector:
             "llm_backend": backend,
             "llm_model": getattr(config, "LLM_MODEL", None) if backend == "ollama" else None,
             "llama_cpp_url": getattr(config, "LLAMA_CPP_URL", None) if backend == "llama_cpp" else None,
+            # Untuk kompatibilitas dengan scripts/test_corrector.py
+            # Saat ini belum ada pengecekan koneksi nyata, jadi diset False secara default
+            "llm_connected": False,
         }
 
 
