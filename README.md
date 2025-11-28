@@ -85,37 +85,6 @@ Secara default server akan berjalan di `http://0.0.0.0:PORT` (misal `http://loca
 
 ### REST API
 
-#### Koreksi Teks
-
-```bash
-# Output JSON lengkap (mode RAG-only, tanpa LLM)
-curl -X POST http://localhost:8888/correct \
-  -H "Content-Type: application/json" \
-  -d '{"text": "start eating", "use_llm": false}'
-```
-
-Response:
-
-```json
-{
-  "input_text": "start eating",
-  "corrected_text": "start meeting",
-  "correction_made": true,
-  "method": "direct_match",
-  "confidence": 1.0,
-  "candidates": [
-    {
-      "correct_phrase": "start meeting",
-      "matched_text": "start eating",
-      "common_mistakes": ["start eating", "start meting", ...],
-      "context": "Memulai rapat atau pertemuan",
-      "category": "meeting",
-      "similarity": 1.0
-    }
-  ]
-}
-```
-
 Untuk mengaktifkan LLM (RAG + LLM normalizer), set `use_llm` ke `true`:
 
 ```bash
