@@ -182,10 +182,6 @@ Jalankan llama.cpp server:
 ./llama-server -m /path/to/model.gguf --port 8080
 ```
 
-#### Tanpa LLM
-
-Jika tidak ingin pakai LLM, cukup set `use_llm: false` di request API.
-
 ## 📝 Knowledge Base
 
 Edit `data/knowledge_base.json` untuk menambah/mengubah koreksi:
