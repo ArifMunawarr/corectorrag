@@ -13,7 +13,6 @@ from config import config
 # Pydantic models
 class CorrectionRequest(BaseModel):
     text: str = Field(..., description="Teks STT yang akan dikoreksi")
-    use_llm: bool = Field(True, description="Gunakan LLM untuk koreksi")
 
 
 class BatchCorrectionRequest(BaseModel):
@@ -98,7 +97,8 @@ async def correct_text(request: CorrectionRequest):
         corrector = get_corrector()
         result = corrector.correct(
             input_text=request.text,
-            use_llm=request.use_llm
+            # use_llm di-hardcode True agar klien cukup mengirim {"text": "..."}
+            use_llm=True,
         )
         return CorrectionResponse(**result)
     except Exception as e:
@@ -112,7 +112,8 @@ async def correct_text_plain(request: CorrectionRequest):
         # Gunakan mode n-gram supaya hanya frasa salah dengar yang diganti
         result = corrector.correct_in_text(
             input_text=request.text,
-            use_llm=request.use_llm,
+            # Selalu gunakan LLM untuk normalisasi akhir
+            use_llm=True,
         )
         return PlainCorrectionResponse(corrected_text=result["corrected_text"])
     except Exception as e:
