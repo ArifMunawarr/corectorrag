@@ -240,8 +240,10 @@ class STTCorrector:
             "- JANGAN hapus kata apapun dari input - semua kata harus tetap ada dalam output (meskipun dikoreksi)",
             "- JANGAN ganti kata dengan kata lain yang mengubah makna kalimat",
             "- JANGAN ubah struktur kalimat atau urutan kata",
+            "- JANGAN ubah bahasa gaul/slang ke bahasa baku",
+            "- JANGAN ubah kata yang sudah benar atau sudah jelas maknanya (contoh: 'mimpin' tetap 'mimpin', JANGAN diubah)",
             "- BOLEH memperbaiki kapitalisasi dan spasi yang salah (misalnya 'kitMulai' → 'kita mulai')",
-            "- KHUSUS untuk istilah/\"Frasa benar\" dari knowledge base, JANGAN ubah penulisan sama sekali (huruf besar/kecil, spasi, tanda hubung)",
+            "- KHUSUS untuk istilah/\"Frasa benar\" dari knowledge base, gunakan PERSIS seperti tertulis",
             "- Koreksi harus minimal: hanya perbaiki huruf/ejaan, kapitalisasi, dan spasi yang salah",
             "- OUTPUT: Hanya tulis teks hasil koreksi, TANPA label, TANPA penjelasan",
             "",
@@ -262,6 +264,12 @@ class STTCorrector:
             parts.append(self._format_candidates(top_candidates))
 
         parts.append("")
+        parts.append("===== BAHASA GAUL YANG HARUS DIPERTAHANKAN =====")
+        parts.append("PENTING: Jika menemukan kata berikut, KOREKSI KE BENTUK GAUL, BUKAN KE BAHASA BAKU:")
+        parts.append("- 'gua', 'guwe', 'gwe' → 'gue' (BUKAN 'saya' atau 'aku')")
+        parts.append("- 'lo', 'luh', 'luw', 'loe' → 'lu' (BUKAN 'kamu' atau 'Anda')")
+        parts.append("- Kata seperti 'bokap', 'nyokap', 'cuy', 'bro', 'santuy' TETAP dipertahankan")
+        parts.append("")
         parts.append("===== CONTOH POLA KOREKSI =====")
         parts.append("Perbaiki huruf/ejaan, kapitalisasi, dan spasi yang salah; jangan ganti makna kalimat:")
         parts.append("")
@@ -273,12 +281,17 @@ class STTCorrector:
         parts.append("'dgan' → 'dengan' (huruf 'en' hilang)")
         parts.append("'bru' → 'baru' (huruf 'a' hilang)")
         parts.append("'kitMulai' → 'kita mulai' (spasi + huruf)")
+        parts.append("'gua' → 'gue' (BUKAN 'aku')")
+        parts.append("'lo' → 'lu' (BUKAN 'kamu')")
+        parts.append("'mimpin' → 'mimpin' (sudah benar, JANGAN diubah)")
         parts.append("")
         parts.append("Contoh kalimat:")
         parts.append("'kmarin kit rapat dgan manajer' → 'kemarin kita rapat dengan manajer'")
         parts.append("'beso kitaMulai pelatihan nek ji, tida di kantor' → 'besok kita mulai pelatihan Next-G tidak di kantor'")
+        parts.append("'gua yang mimpin, lo yang bantu' → 'gue yang mimpin, lu yang bantu'")
         parts.append("")
         parts.append("INGAT: Semua kata dalam input harus ada dalam output (meskipun dikoreksi ejaannya)!")
+        parts.append("INGAT: 'gua'→'gue' (BUKAN 'aku'), 'lo'→'lu' (BUKAN 'kamu')!")
         parts.append("")
         parts.append("===== TUGAS KAMU =====")
         parts.append("")

@@ -49,6 +49,7 @@
         "badi lad",
         "badik lat",
         "badik lad",
+        "badiklad",
         "badik let",
         "badik lap",
         "badiklan",
@@ -156,12 +157,165 @@
       ],
       "context": "Mengakhiri rapat atau pertemuan",
       "category": "meeting"
+    },
+    {
+      "correct_phrase": "gue",
+      "common_mistakes": [
+        "gua",
+        "guwe",
+        "gwe",
+        "guh",
+        "guee",
+        "goe",
+        "goy",
+        "goow",
+        "guhh",
+        "gwei",
+        "gway",
+        "goue",
+        "goo eh",
+        "gu ai",
+        "gu ehe"
+      ],
+      "context": "Kata ganti orang pertama informal",
+      "category": "slang"
+    },
+    {
+      "correct_phrase": "lu",
+      "common_mistakes": [
+        "luh",
+        "luw",
+        "loo",
+        "lue",
+        "loe",
+        "elu'",
+        "luhh",
+        "lu oh",
+        "lu aw",
+        "lwu",
+        "luu",
+        "lu ohh",
+        "lo",
+        "luw.",
+        "lu we"
+      ],
+      "context": "Kata ganti orang kedua informal",
+      "category": "slang"
+    },
+    {
+      "correct_phrase": "bokap",
+      "common_mistakes": [
+        "bokap",
+        "bokab",
+        "boka",
+        "bokap.",
+        "bocap",
+        "bokat",
+        "bokam",
+        "bo kap",
+        "bo cup",
+        "bo cap",
+        "bo gab",
+        "bo gap",
+        "boga",
+        "bokop",
+        "bokapn"
+      ],
+      "context": "Menyebut ayah secara informal",
+      "category": "slang"
+    },
+    {
+      "correct_phrase": "nyokap",
+      "common_mistakes": [
+        "nyokab",
+        "nyokap.",
+        "nyokam",
+        "nyocap",
+        "nyokop",
+        "nyoka",
+        "nyo kap",
+        "nyo cap",
+        "nyo cup",
+        "nyokapn",
+        "nyokep",
+        "nyoket",
+        "nyogap",
+        "nyoklap",
+        "nyakap"
+      ],
+      "context": "Menyebut ibu secara informal",
+      "category": "slang"
+    },
+    {
+      "correct_phrase": "cuy",
+      "common_mistakes": [
+        "cui",
+        "cuyy",
+        "cuyh",
+        "cuih",
+        "cuyy.",
+        "cuyy!",
+        "coy",
+        "coyy",
+        "cwee",
+        "cwi",
+        "cuiy",
+        "cuy ah",
+        "cuy eh",
+        "cu y",
+        "cuyi"
+      ],
+      "context": "Sapaan santai ke teman",
+      "category": "slang"
+    },
+    {
+      "correct_phrase": "bro",
+      "common_mistakes": [
+        "broh",
+        "broo",
+        "brow",
+        "bro'",
+        "bru",
+        "bruuh",
+        "broe",
+        "boro",
+        "bero",
+        "bwo",
+        "pro",
+        "bro ah",
+        "bro oh",
+        "bro w",
+        "brok"
+      ],
+      "context": "Sapaan akrab ke teman",
+      "category": "slang"
+    },
+    {
+      "correct_phrase": "santuy",
+      "common_mistakes": [
+        "santuyy",
+        "santuyh",
+        "santuy.",
+        "santui",
+        "santuyy!",
+        "santuyy?",
+        "santay",
+        "santoi",
+        "santu",
+        "santuy eh",
+        "santuy ah",
+        "san tuy",
+        "santoy",
+        "santooy",
+        "santoyy"
+      ],
+      "context": "Santai atau tidak terburu-buru",
+      "category": "slang"
     }
   ],
   "metadata": {
     "version": "1.0",
     "description": "Knowledge base untuk koreksi kesalahan Speech-to-Text",
-    "total_entries": 4
+    "total_entries": 11
   }
 }
-
